@@ -5,15 +5,18 @@ import (
 	"github.com/metsawyr/abios-api/internal/config"
 	"github.com/metsawyr/abios-api/internal/server/abios"
 	"github.com/metsawyr/abios-api/internal/server/handlers"
+	"github.com/redis/go-redis/v9"
 )
 
 type RestServer struct {
-	config *config.Config
+	config      *config.Config
+	redisClient *redis.Client
 }
 
-func NewRestServer(config *config.Config) RestServer {
+func NewRestServer(config *config.Config, redisClient *redis.Client) RestServer {
 	return RestServer{
 		config,
+		redisClient,
 	}
 }
 
@@ -24,9 +27,11 @@ func (s *RestServer) Start() {
 	livePlayersHandler := handlers.NewLivePlayersHandler(&abiosClient)
 	liveTeamsHandler := handlers.NewLiveTeamsHandler(&abiosClient)
 
-	router.GET("/series/live", liveSeriesHandler)
-	router.GET("/players/live", livePlayersHandler)
-	router.GET("/teams/live", liveTeamsHandler)
+	rateLimiter := newRateLimiter(s.config, s.redisClient)
 
-	router.Run(":3000")
+	router.GET("/series/live", rateLimiter, liveSeriesHandler)
+	router.GET("/players/live", rateLimiter, livePlayersHandler)
+	router.GET("/teams/live", rateLimiter, liveTeamsHandler)
+
+	router.Run(":8000")
 }

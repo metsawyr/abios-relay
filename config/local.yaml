@@ -1,0 +1,13 @@
+abios:
+  apiUri: https://atlas.abiosgaming.com/v3
+  secret: <env>
+
+redis:
+  uri: redis:6379
+  password: <env>
+  database: 0
+
+app:
+  rateLimit:
+    requests: 1
+    seconds: 10
